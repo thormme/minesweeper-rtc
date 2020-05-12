@@ -1,0 +1,68 @@
+.board {
+    display: grid;
+    list-style: none;
+    grid-template-columns: repeat(30, 16px);
+    grid-template-rows: repeat(5000, 16px);
+    grid-row-gap: 0;
+    grid-column-gap: 0;
+}
+
+.cell {
+    background-image: url("./images/blank.png");
+}
+
+.cell.revealed {
+    background-image: url("./images/0.png");
+}
+
+.cell.mine {
+    background-image: url("./images/mine.png");
+}
+
+.cell.flag {
+    background-image: url("./images/flag.png");
+}
+
+.cell.one {
+    background-image: url("./images/1.png");
+}
+
+.cell.two {
+    background-image: url("./images/2.png");
+}
+
+.cell.three {
+    background-image: url("./images/3.png");
+}
+
+.cell.four {
+    background-image: url("./images/4.png");
+}
+
+.cell.five {
+    background-image: url("./images/5.png");
+}
+
+.cell.six {
+    background-image: url("./images/6.png");
+}
+
+.cell.seven {
+    background-image: url("./images/7.png");
+}
+
+.cell.eight {
+    background-image: url("./images/8.png");
+}
+
+.cursor {
+    width: 16px;
+    height:16px;
+    background-image: url("./images/cursor.svg");
+    position: absolute;
+    pointer-events: none;
+}
+
+body {
+    min-height: 100%;
+}
