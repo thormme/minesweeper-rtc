@@ -8,12 +8,12 @@ Clone the repository
 
 Install npm dependencies:
 
-    `npm install`
+    npm install
     
 Running the development server:
 
-    `npm run start`
+    npm run start
     
 Creating the release artifacts:
 
-    `npm run dist`
+    npm run dist
