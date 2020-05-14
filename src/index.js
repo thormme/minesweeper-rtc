@@ -156,6 +156,10 @@ function updateCellVisibility(index, visitedCells) {
                 default:
                     numClass = 'revealed';
             }
+            // Keep flood filled flags visible
+            if (boardVisibility.get(key) == CELL_FLAGGED) {
+                mineElements[key].classList.add('flag');
+            }
             mineElements[key].classList.add(numClass);
         }
     }  if (boardVisibility.get(key) == CELL_FLAGGED) {

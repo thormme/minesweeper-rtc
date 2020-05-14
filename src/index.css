@@ -19,10 +19,6 @@
     background-image: url("./images/mine.png");
 }
 
-.cell.flag {
-    background-image: url("./images/flag.png");
-}
-
 .cell.one {
     background-image: url("./images/1.png");
 }
@@ -53,6 +49,10 @@
 
 .cell.eight {
     background-image: url("./images/8.png");
+}
+
+.cell.flag {
+    background-image: url("./images/flag.png");
 }
 
 .cursor {
