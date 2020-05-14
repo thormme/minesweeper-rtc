@@ -12,8 +12,8 @@ const cursorPositions = ydoc.getMap('cursorPositions');
 
 let mineElements = [];
 let cursorElements = [];
+let boardVis = [];
 
-const CELL_HIDDEN = 0;
 const CELL_REVEALED = 1;
 const CELL_FLAGGED = 2;
 
@@ -58,100 +58,108 @@ boardOptions.observe((event) => {
     }
 });
 
-boardVisibility.observe((event, e2, e3) => {
-    for (let key of event.keysChanged) {
-
-      //console.log(event.changes.keys.get(key).action);
-      if (mineElements[key] === undefined) {
-          return;
-      }
-      mineElements[key].className = 'cell'
-      if (boardVisibility.get(key) == CELL_REVEALED) {
-          mineElements[key].classList.add('revealed');
-          if (boardMines.get(key) === true) {
-              mineElements[key].classList.add('mine');
-          } else {
-              let count = 0;
-              let boardWidth = boardOptions.get('boardWidth');
-              let boardHeight = boardOptions.get('boardHeight');
-              let keyY = Math.floor(parseInt(key) / boardWidth);
-              let keyX = parseInt(key) % boardWidth;
-              for (let y = keyY - (keyY > 0 ? 1 : 0); y <= keyY + 1 && y < boardHeight; y++) {
-                  for (let x = keyX - (keyX > 0 ? 1 : 0); x <= keyX + 1 && x < boardWidth; x++) {
-                      let checkIndex = x + y * boardWidth;
-                      if (boardMines.get(`${checkIndex}`) === true) {
-                          count++;
-                      }
-                  }
-              }
-              let numClass = 'revealed';
-              switch (count) {
-                  case 0:
-                      numClass = 'revealed';
-                      break;
-                  case 1:
-                      numClass = 'one';
-                      break;
-                  case 2:
-                      numClass = 'two';
-                      break;
-                  case 3:
-                      numClass = 'three';
-                      break;
-                  case 4:
-                      numClass = 'four';
-                      break;
-                  case 5:
-                      numClass = 'five';
-                      break;
-                  case 6:
-                      numClass = 'six';
-                      break;
-                  case 7:
-                      numClass = 'seven';
-                      break;
-                  case 8:
-                      numClass = 'eight';
-                      break;
-                  default:
-                      numClass = 'revealed';
-              }
-              mineElements[key].classList.add(numClass);
-          }
-      } else if (boardVisibility.get(key) == CELL_HIDDEN) {
-          // nothing
-      } else if (boardVisibility.get(key) == CELL_FLAGGED) {
-          mineElements[key].classList.add('flag');
-      }
-
-      //mineElements[key].textContent = boardMines.get(key) === true ? '1' : '0';
-  }
+boardMines.observe((event) => {
+    // Redraw whole board for any changed mine.
+    // This is slow when generating new boards, but needed to support flood fill.
+    redrawBoard();
 });
 
-function floodFill(index) {
-    boardVisibility.set(`${index}`, CELL_REVEALED);
-    let count = 0;
+function redrawBoard() {
     let boardWidth = boardOptions.get('boardWidth');
     let boardHeight = boardOptions.get('boardHeight');
-    let keyY = Math.floor(index / boardWidth);
-    let keyX = index % boardWidth;
-    for (let y = keyY - (keyY > 0 ? 1 : 0); y <= keyY + 1 && y < boardHeight; y++) {
-        for (let x = keyX - (keyX > 0 ? 1 : 0); x <= keyX + 1 && x < boardWidth; x++) {
-            let checkIndex = x + y * boardWidth;
-            if (boardMines.get(`${checkIndex}`) === true) {
-                count++;
-            }
+
+    for (let i = 0; i < boardWidth * boardHeight; i++) {
+        mineElements[i].className = "cell";
+        boardVis[i] = false;
+    }
+    for (let i of boardVisibility.keys()) {
+        updateCellVisibility(parseInt(i));
+    }
+}
+
+boardVisibility.observe((event) => {
+    for (let key of event.keysChanged) {
+        if (boardVisibility.get(key) === undefined) {
+            // Needed for flood fill
+            redrawBoard();
+        } else {
+            updateCellVisibility(parseInt(key));
         }
     }
-    if (count === 0) {
-        for (let y = keyY - (keyY > 0 ? 1 : 0); y <= keyY + 1 && y < boardHeight; y++) {
-            for (let x = keyX - (keyX > 0 ? 1 : 0); x <= keyX + 1 && x < boardWidth; x++) {
-                let checkIndex = x + y * boardWidth;
-                if (!(x === keyX && y === keyY) && boardVisibility.get(`${checkIndex}`) !== CELL_REVEALED) {
-                    floodFill(checkIndex);
+});
+
+function updateCellVisibility(index, visitedCells) {
+    let key = `${index}`;
+    let floodFill = visitedCells !== undefined;
+    visitedCells = visitedCells || {};
+    if (mineElements[key] === undefined || visitedCells[index] === true) {
+        return;
+    }
+    visitedCells[index] = true;
+    mineElements[key].className = 'cell'
+    if (boardVisibility.get(key) == CELL_REVEALED || floodFill || boardVis[index] === true) {
+        boardVis[index] = true;
+        mineElements[key].classList.add('revealed');
+        if (boardMines.get(key) === true) {
+            mineElements[key].classList.add('mine');
+        } else {
+            let count = 0;
+            let boardWidth = boardOptions.get('boardWidth');
+            let boardHeight = boardOptions.get('boardHeight');
+            let keyY = Math.floor(parseInt(key) / boardWidth);
+            let keyX = parseInt(key) % boardWidth;
+            for (let y = keyY - (keyY > 0 ? 1 : 0); y <= keyY + 1 && y < boardHeight; y++) {
+                for (let x = keyX - (keyX > 0 ? 1 : 0); x <= keyX + 1 && x < boardWidth; x++) {
+                    let checkIndex = x + y * boardWidth;
+                    if (boardMines.get(`${checkIndex}`) === true) {
+                        count++;
+                    }
                 }
             }
+            let numClass = 'revealed';
+            switch (count) {
+                case 0:
+                    for (let y = keyY - (keyY > 0 ? 1 : 0); y <= keyY + 1 && y < boardHeight; y++) {
+                        for (let x = keyX - (keyX > 0 ? 1 : 0); x <= keyX + 1 && x < boardWidth; x++) {
+                            let checkIndex = x + y * boardWidth;
+                            if (!(x === keyX && y === keyY)) {
+                                updateCellVisibility(checkIndex, visitedCells);
+                            }
+                        }
+                    }
+                    numClass = 'revealed';
+                    break;
+                case 1:
+                    numClass = 'one';
+                    break;
+                case 2:
+                    numClass = 'two';
+                    break;
+                case 3:
+                    numClass = 'three';
+                    break;
+                case 4:
+                    numClass = 'four';
+                    break;
+                case 5:
+                    numClass = 'five';
+                    break;
+                case 6:
+                    numClass = 'six';
+                    break;
+                case 7:
+                    numClass = 'seven';
+                    break;
+                case 8:
+                    numClass = 'eight';
+                    break;
+                default:
+                    numClass = 'revealed';
+            }
+            mineElements[key].classList.add(numClass);
         }
+    }  if (boardVisibility.get(key) == CELL_FLAGGED) {
+        mineElements[key].classList.add('flag');
     }
 }
 
@@ -175,15 +183,15 @@ function createBoard() {
 
         cell.addEventListener('click', () => {
             if (boardVisibility.get(`${i}`) !== CELL_FLAGGED) {
-                floodFill(i);
+                boardVisibility.set(`${i}`, CELL_REVEALED);
             }
         });
 
         cell.addEventListener('contextmenu', (e) => {
-            if (boardVisibility.get(`${i}`) === CELL_HIDDEN || boardVisibility.get(`${i}`) === undefined) {
+            if (boardVisibility.get(`${i}`) === undefined) {
                 boardVisibility.set(`${i}`, CELL_FLAGGED);
             } else if (boardVisibility.get(`${i}`) === CELL_FLAGGED) {
-                boardVisibility.set(`${i}`, CELL_HIDDEN);
+                boardVisibility.delete(`${i}`);
             }
             e.preventDefault();
             return false;
@@ -211,8 +219,10 @@ window.addEventListener('DOMContentLoaded', (event) => {
         boardOptions.set("numMines", numMines);
 
         for (let i = 0; i < boardWidth * boardHeight; i++) {
+            boardVisibility.delete(`${i}`);
+        }
+        for (let i = 0; i < boardWidth * boardHeight; i++) {
             boardMines.set(`${i}`, false);
-            boardVisibility.set(`${i}`, CELL_HIDDEN);
         }
         for (let i = 0; i < numMines; i++) {
             let pos = Math.floor(Math.random() * boardWidth * boardHeight);
