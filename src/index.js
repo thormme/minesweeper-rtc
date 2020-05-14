@@ -13,6 +13,7 @@ const cursorPositions = ydoc.getMap('cursorPositions');
 let mineElements = [];
 let cursorElements = [];
 let boardVis = [];
+let redrawTimeout;
 
 const CELL_REVEALED = 1;
 const CELL_FLAGGED = 2;
@@ -65,16 +66,23 @@ boardMines.observe((event) => {
 });
 
 function redrawBoard() {
-    let boardWidth = boardOptions.get('boardWidth');
-    let boardHeight = boardOptions.get('boardHeight');
+    // This is a hack to avoid redrawing the board many times in quick succession
+    // Only render after a short timeout.
+    if (redrawTimeout) {
+        window.clearTimeout(redrawTimeout);
+    }
+    redrawTimeout = window.setTimeout(() => {
+        let boardWidth = boardOptions.get('boardWidth');
+        let boardHeight = boardOptions.get('boardHeight');
 
-    for (let i = 0; i < boardWidth * boardHeight; i++) {
-        mineElements[i].className = "cell";
-        boardVis[i] = false;
-    }
-    for (let i of boardVisibility.keys()) {
-        updateCellVisibility(parseInt(i));
-    }
+        for (let i = 0; i < boardWidth * boardHeight; i++) {
+            mineElements[i].className = "cell";
+            boardVis[i] = false;
+        }
+        for (let i of boardVisibility.keys()) {
+            updateCellVisibility(parseInt(i));
+        }
+    }, 20);
 }
 
 boardVisibility.observe((event) => {
@@ -180,8 +188,6 @@ function createBoard() {
     for (let i = 0; i < boardOptions.get('boardWidth') * boardOptions.get('boardHeight'); i++) {
         var cell = document.createElement("li");                 // Create a <li> node
         cell.className = "cell";
-        //var textnode = document.createTextNode("0");         // Create a text node
-        //cell.appendChild(textnode);                              // Append the text to <li>
         board.appendChild(cell);
         mineElements[i] = cell;
 
@@ -230,7 +236,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         }
         for (let i = 0; i < numMines; i++) {
             let pos = Math.floor(Math.random() * boardWidth * boardHeight);
-            while (boardMines.get(`${pos}`) == true) { // TODO: This probably doesn't work
+            while (boardMines.get(`${pos}`) == true) {
                 pos = Math.floor(Math.random() * boardWidth * boardHeight);
             }
             boardMines.set(`${pos}`, true);
