@@ -198,7 +198,7 @@ function createBoard() {
         });
 
         cell.addEventListener('contextmenu', (e) => {
-            if (boardVisibility.get(`${i}`) === undefined) {
+            if (boardVis[i] !== true && boardVisibility.get(`${i}`) !== CELL_FLAGGED) {
                 boardVisibility.set(`${i}`, CELL_FLAGGED);
             } else if (boardVisibility.get(`${i}`) === CELL_FLAGGED) {
                 boardVisibility.delete(`${i}`);
