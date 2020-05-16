@@ -6,13 +6,14 @@ const ydoc = new Y.Doc();
 // clients connected to the same room-name share document updates
 const provider = new WebrtcProvider('testing-room-12345678909876543218', ydoc);
 const boardMines = ydoc.getMap('boardMines');
-const boardVisibility = ydoc.getMap('boardVisibility');
+const boardInteractions = ydoc.getMap('boardInteractions');
 const boardOptions = ydoc.getMap('boardOptions');
 const cursorPositions = ydoc.getMap('cursorPositions');
 
 let mineElements = [];
 let cursorElements = [];
-let boardVis = [];
+let boardVisibility = [];
+let flagPositions = new Set(); // Used to track remaining mines
 let redrawTimeout;
 
 const CELL_REVEALED = 1;
@@ -77,17 +78,18 @@ function redrawBoard() {
 
         for (let i = 0; i < boardWidth * boardHeight; i++) {
             mineElements[i].className = "cell";
-            boardVis[i] = false;
+            boardVisibility[i] = false;
         }
-        for (let i of boardVisibility.keys()) {
+        clearFlagPositions();
+        for (let i of boardInteractions.keys()) {
             updateCellVisibility(parseInt(i));
         }
     }, 20);
 }
 
-boardVisibility.observe((event) => {
+boardInteractions.observe((event) => {
     for (let key of event.keysChanged) {
-        if (boardVisibility.get(key) === undefined) {
+        if (boardInteractions.get(key) === undefined) {
             // Needed for flood fill
             redrawBoard();
         } else {
@@ -105,8 +107,8 @@ function updateCellVisibility(index, visitedCells) {
     }
     visitedCells[index] = true;
     mineElements[key].className = 'cell'
-    if (boardVisibility.get(key) == CELL_REVEALED || floodFill || boardVis[index] === true) {
-        boardVis[index] = true;
+    if (boardInteractions.get(key) == CELL_REVEALED || floodFill || boardVisibility[index] === true) {
+        boardVisibility[index] = true;
         mineElements[key].classList.add('revealed');
         if (boardMines.get(key) === true) {
             mineElements[key].classList.add('mine');
@@ -165,14 +167,36 @@ function updateCellVisibility(index, visitedCells) {
                     numClass = 'revealed';
             }
             // Keep flood filled flags visible
-            if (boardVisibility.get(key) == CELL_FLAGGED) {
+            if (boardInteractions.get(key) == CELL_FLAGGED) {
                 mineElements[key].classList.add('flag');
             }
             mineElements[key].classList.add(numClass);
         }
-    }  if (boardVisibility.get(key) == CELL_FLAGGED) {
-        mineElements[key].classList.add('flag');
     }
+    if (boardInteractions.get(key) == CELL_FLAGGED) {
+        mineElements[key].classList.add('flag');
+        addFlagPosition(key);
+    } else {
+        removeFlagPosition(key);
+    }
+}
+
+function updateMineCount() {
+    let mineCountElement = document.querySelector("#remaining-mines");
+    let remainingMines = boardOptions.get("numMines") - flagPositions.size;
+    mineCountElement.textContent = `${remainingMines}`;
+}
+function addFlagPosition(key) {
+    flagPositions.add(key);
+    updateMineCount();
+}
+function removeFlagPosition(key) {
+    flagPositions.delete(key);
+    updateMineCount();
+}
+function clearFlagPositions(key) {
+    flagPositions.clear();
+    updateMineCount();
 }
 
 function createBoard() {
@@ -192,16 +216,16 @@ function createBoard() {
         mineElements[i] = cell;
 
         cell.addEventListener('click', () => {
-            if (boardVisibility.get(`${i}`) !== CELL_FLAGGED) {
-                boardVisibility.set(`${i}`, CELL_REVEALED);
+            if (boardInteractions.get(`${i}`) !== CELL_FLAGGED) {
+                boardInteractions.set(`${i}`, CELL_REVEALED);
             }
         });
 
         cell.addEventListener('contextmenu', (e) => {
-            if (boardVis[i] !== true && boardVisibility.get(`${i}`) !== CELL_FLAGGED) {
-                boardVisibility.set(`${i}`, CELL_FLAGGED);
-            } else if (boardVisibility.get(`${i}`) === CELL_FLAGGED) {
-                boardVisibility.delete(`${i}`);
+            if (boardVisibility[i] !== true && boardInteractions.get(`${i}`) !== CELL_FLAGGED) {
+                boardInteractions.set(`${i}`, CELL_FLAGGED);
+            } else if (boardInteractions.get(`${i}`) === CELL_FLAGGED) {
+                boardInteractions.delete(`${i}`);
             }
             e.preventDefault();
             return false;
@@ -229,7 +253,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         boardOptions.set("numMines", numMines);
 
         for (let i = 0; i < boardWidth * boardHeight; i++) {
-            boardVisibility.delete(`${i}`);
+            boardInteractions.delete(`${i}`);
         }
         for (let i = 0; i < boardWidth * boardHeight; i++) {
             boardMines.set(`${i}`, false);

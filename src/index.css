@@ -2,7 +2,7 @@
     display: grid;
     list-style: none;
     grid-template-columns: repeat(30, 16px);
-    grid-template-rows: repeat(5000, 16px);
+    grid-auto-rows: 16px;
     grid-row-gap: 0;
     grid-column-gap: 0;
 }
@@ -61,6 +61,10 @@
     background-image: url("./images/cursor.svg");
     position: absolute;
     pointer-events: none;
+}
+
+#remaining-mines:before {
+    content: "Mines Remaining:";
 }
 
 body {
