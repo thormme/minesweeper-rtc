@@ -95,6 +95,7 @@ boardInteractions.observe((event) => {
         } else {
             updateCellVisibility(parseInt(key));
         }
+        updateEndState();
     }
 });
 
@@ -186,6 +187,40 @@ function updateMineCount() {
     let remainingMines = boardOptions.get("numMines") - flagPositions.size;
     mineCountElement.textContent = `${remainingMines}`;
 }
+function updateEndState() {
+    let endStateElement = document.querySelector("#end-state");
+    let lives = boardOptions.get("mode");
+    let boardWidth = boardOptions.get('boardWidth');
+    let boardHeight = boardOptions.get('boardHeight');
+    let minesClicked = 0;
+    let correctCicked = 0;
+
+    for (let y = 0; y < boardHeight; y++) {
+        for (let x = 0; x < boardWidth; x++) {
+            let checkIndex = x + y * boardWidth;
+            if(boardInteractions.get(`${checkIndex}`) === CELL_REVEALED) {
+                if (boardMines.get(`${checkIndex}`) === true) {
+                    minesClicked++;
+                } else {
+                    correctCicked++;
+                }
+            }
+        }
+    }
+
+
+    if(minesClicked > lives && lives >= 0) {
+        endStateElement.textContent = `You Lose!`;
+    } else if (correctCicked >= (boardHeight * boardWidth - boardOptions.get("numMines")) ) {
+        endStateElement.textContent = `You Win!`;
+    } else {
+        if(lives < 0) {
+        endStateElement.textContent = `Infinite Lives`;
+        } else {
+            endStateElement.textContent = `Lives: ${lives - minesClicked}`;
+        }
+    }
+}
 function addFlagPosition(key) {
     flagPositions.add(key);
     updateMineCount();
@@ -246,11 +281,15 @@ window.addEventListener('DOMContentLoaded', (event) => {
         let boardWidth = document.querySelector('#board-width').value;
         let boardHeight = document.querySelector('#board-height').value;
         let numMines = document.querySelector('#num-mines').value;
-        numMines = Math.min(numMines - 1, boardWidth * boardHeight);
+        let mode = document.querySelector('#mode').value;
+        numMines = Math.min(numMines, boardWidth * boardHeight - 1);
 
         boardOptions.set("boardWidth", boardWidth);
         boardOptions.set("boardHeight", boardHeight);
         boardOptions.set("numMines", numMines);
+        boardOptions.set("mode", mode);
+
+        updateEndState();
 
         for (let i = 0; i < boardWidth * boardHeight; i++) {
             boardInteractions.delete(`${i}`);
