@@ -246,7 +246,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         let boardWidth = document.querySelector('#board-width').value;
         let boardHeight = document.querySelector('#board-height').value;
         let numMines = document.querySelector('#num-mines').value;
-        numMines = Math.min(numMines, boardWidth * boardHeight);
+        numMines = Math.min(numMines - 1, boardWidth * boardHeight);
 
         boardOptions.set("boardWidth", boardWidth);
         boardOptions.set("boardHeight", boardHeight);
